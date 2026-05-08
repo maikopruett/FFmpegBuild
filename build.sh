@@ -229,12 +229,14 @@ make_framework() {
 
     # Remove platform-specific hwcontext headers (FFmpeg only)
     if [[ "${LIB}" == lib* ]]; then
-        rm -f "${FW_DIR}/Headers/hwcontext_cuda.h" \
+        rm -f "${FW_DIR}/Headers/hwcontext_amf.h" \
+              "${FW_DIR}/Headers/hwcontext_cuda.h" \
               "${FW_DIR}/Headers/hwcontext_d3d11va.h" \
               "${FW_DIR}/Headers/hwcontext_d3d12va.h" \
               "${FW_DIR}/Headers/hwcontext_drm.h" \
               "${FW_DIR}/Headers/hwcontext_dxva2.h" \
               "${FW_DIR}/Headers/hwcontext_mediacodec.h" \
+              "${FW_DIR}/Headers/hwcontext_oh.h" \
               "${FW_DIR}/Headers/hwcontext_opencl.h" \
               "${FW_DIR}/Headers/hwcontext_qsv.h" \
               "${FW_DIR}/Headers/hwcontext_vaapi.h" \
@@ -333,6 +335,19 @@ if [[ "$1" == "clean" ]]; then
     echo "Cleaning..."
     rm -rf "${BUILD_DIR}" "${OUTPUT_DIR}/"*.xcframework
     echo "✓ Clean"
+    exit 0
+fi
+
+# `package` mode skips fetch + compile and only re-runs the
+# framework + xcframework packaging steps using whatever's already
+# in build/thin and build/dav1d-thin. Useful when the only change
+# is to header-exclusion lists or framework Info.plist values, so
+# we don't burn a full multi-arch FFmpeg rebuild.
+if [[ "$1" == "package" ]]; then
+    rm -rf "${BUILD_DIR}/frameworks" "${OUTPUT_DIR}/"*.xcframework 2>/dev/null || true
+    make_xcframeworks
+    echo ""
+    echo "✓ Repackage complete"
     exit 0
 fi
 
