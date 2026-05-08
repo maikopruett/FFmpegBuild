@@ -146,6 +146,13 @@ COMMON_FLAGS=(
     --enable-parser=vp8 --enable-parser=vp9 --enable-parser=av1
     --enable-bsf=aac_adtstoasc --enable-bsf=h264_mp4toannexb
     --enable-bsf=hevc_mp4toannexb --enable-bsf=extract_extradata
+    # MP4 muxer for AetherEngine's HLSVideoEngine. Lets the engine
+    # remux source bytes into fragmented MP4 segments served via
+    # local HLS to AVPlayer for the Dolby-Vision-via-AVPlayer hybrid
+    # path. The mov muxer is the underlying implementation; mp4
+    # selects it with the right brand defaults. No encoder is
+    # enabled so this is stream-copy only.
+    --enable-muxer=mp4 --enable-muxer=mov
 )
 
 build_one() {
