@@ -2,16 +2,17 @@
 
 <p align="center">
   <b>Slim FFmpeg xcframeworks for Apple platforms.</b><br>
-  Demuxing and decoding only. No network stack, no encoders, no CLI binaries.
+  Demux, decode, and a thin HLS-fMP4 mux path for AVPlayer bridging. No network stack, no CLI binaries.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/FFmpeg-7.1-brightgreen">
+  <img src="https://img.shields.io/badge/FFmpeg-8.1-brightgreen">
   <img src="https://img.shields.io/badge/dav1d-1.5.1-blue">
   <img src="https://img.shields.io/badge/iOS-16%2B-black?logo=apple">
   <img src="https://img.shields.io/badge/tvOS-16%2B-black?logo=apple">
   <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple">
   <img src="https://img.shields.io/badge/license-LGPL--3.0-lightgrey">
+  <a href="https://ko-fi.com/superuser404"><img src="https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=kofi&logoColor=white"></a>
 </p>
 
 ---
@@ -37,7 +38,8 @@ Full FFmpeg builds for iOS land at 40-70 MB because they bundle a TLS stack, enc
 Anything the app layer should already handle or doesn't need:
 
 - Network / TLS: FFmpeg reads from an `avio_alloc_context` callback, you wire `URLSession` to it
-- Encoders and muxers
+- Encoders, except FLAC (kept for the TrueHD / DTS / DTS-HD-MA → FLAC bridge that lets AVPlayer ingest lossless audio)
+- Muxers, except MP4 / MOV / HLS (kept for the HLS-fMP4 producer that wraps streams for AVPlayer)
 - libavfilter, libswscale, libavdevice
 - Programs (`ffmpeg`, `ffplay`, `ffprobe`)
 - Hardware accel layers other than VideoToolbox
@@ -73,7 +75,7 @@ Then import the modules you need: `Libavformat`, `Libavcodec`, `Libavutil`, `Lib
 
 - **Video (hardware via VideoToolbox)**: H.264, HEVC up to Main10 (HDR10/DV Profile 8)
 - **Video (software)**: AV1 (dav1d), VP9, VP8, MPEG-2, MPEG-4, VC-1
-- **Audio**: AAC, AC3, EAC3 (incl. JOC detection for Atmos), FLAC, MP3, Opus, Vorbis, TrueHD, DTS, ALAC, PCM
+- **Audio**: AAC, AC3, EAC3 (incl. JOC detection for Atmos), FLAC, MP2, MP3, Opus, Vorbis, TrueHD, DTS, ALAC, PCM
 - **Subtitles**: SRT, ASS, SSA, WebVTT, PGS, DVB, DVD
 
 HDR metadata (BT.2020, SMPTE ST 2084 / PQ, HLG, DV RPU) is preserved end-to-end so the decode pipeline can tag frames correctly.
