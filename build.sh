@@ -309,6 +309,28 @@ EOF
 <key>MinimumOSVersion</key><string>${MIN_OS}</string>
 </dict></plist>
 EOF
+
+    # macOS requires the versioned ("deep") framework bundle layout, with the
+    # binary/Headers/Modules under Versions/A and Info.plist in
+    # Versions/A/Resources. iOS/tvOS use shallow bundles (everything at the
+    # root), which is what we built above. Restructure only the macOS
+    # framework, otherwise Xcode 15+/26 rejects it during embedded-framework
+    # validation: "contains Info.plist, expected
+    # Versions/Current/Resources/Info.plist since the platform does not use
+    # shallow bundles".
+    if [[ "${PLATFORM}" == "macos" ]]; then
+        local V="${FW_DIR}/Versions/A"
+        mkdir -p "${V}/Resources"
+        mv "${FW_DIR}/${FW}"      "${V}/${FW}"
+        mv "${FW_DIR}/Headers"    "${V}/Headers"
+        mv "${FW_DIR}/Modules"    "${V}/Modules"
+        mv "${FW_DIR}/Info.plist" "${V}/Resources/Info.plist"
+        ln -s "A"                          "${FW_DIR}/Versions/Current"
+        ln -s "Versions/Current/${FW}"     "${FW_DIR}/${FW}"
+        ln -s "Versions/Current/Headers"   "${FW_DIR}/Headers"
+        ln -s "Versions/Current/Modules"   "${FW_DIR}/Modules"
+        ln -s "Versions/Current/Resources" "${FW_DIR}/Resources"
+    fi
 }
 
 make_xcframeworks() {
