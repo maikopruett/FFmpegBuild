@@ -51,7 +51,7 @@
 		</dict>
 		<dict>
 			<key>BinaryPath</key>
-			<string>Libavformat.framework/Libavformat</string>
+			<string>Libavformat.framework/Versions/A/Libavformat</string>
 			<key>LibraryIdentifier</key>
 			<string>macos-arm64_x86_64</string>
 			<key>LibraryPath</key>
