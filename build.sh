@@ -184,6 +184,13 @@ COMMON_FLAGS=(
     --disable-bsfs --disable-network --disable-protocols
     --disable-d3d11va --disable-dxva2 --disable-vaapi --disable-vdpau
     --disable-gray --disable-iconv --disable-bzlib
+    # zlib from the Apple SDK (libz.tbd; consumers already link it via
+    # Package.swift). Required by matroskadec for MKV ContentEncoding —
+    # mkvmerge-compressed track headers/payloads are common in remuxes,
+    # and without zlib those containers fail avformat_open_input with
+    # AVERROR_INVALIDDATA / "Unsupported encoding type". Must be explicit
+    # because --disable-autodetect turns off the automatic zlib probe.
+    --enable-zlib
     --disable-linux-perf --disable-symver --disable-swscale-alpha
     --enable-avcodec --enable-avformat --enable-avutil --enable-swresample
     --enable-libzimg
