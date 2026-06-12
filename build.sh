@@ -33,6 +33,23 @@ fetch_ffmpeg() {
     git clone --depth 1 --branch "${FFMPEG_VERSION}" "${FFMPEG_REPO}" "${FFMPEG_SRC}"
 }
 
+# Apply local patches (Patches/*.patch) on top of the FFmpeg tag. Each is
+# checked first so a re-run against an already-patched tree is a no-op.
+apply_ffmpeg_patches() {
+    setopt local_options null_glob
+    for p in "${SCRIPT_DIR}"/Patches/*.patch; do
+        if git -C "${FFMPEG_SRC}" apply --check "$p" 2>/dev/null; then
+            echo "→ Applying $(basename "$p")"
+            git -C "${FFMPEG_SRC}" apply "$p"
+        elif git -C "${FFMPEG_SRC}" apply --check --reverse "$p" 2>/dev/null; then
+            echo "→ $(basename "$p") already applied, skipping"
+        else
+            echo "✗ $(basename "$p") does not apply cleanly" >&2
+            exit 1
+        fi
+    done
+}
+
 fetch_dav1d() {
     if [[ -d "${DAV1D_SRC}" ]]; then
         echo "→ dav1d source already exists, skipping clone"
@@ -472,6 +489,7 @@ echo "║  VideoToolbox HW + Metal ready      ║"
 echo "╚══════════════════════════════════════╝"
 
 fetch_ffmpeg
+apply_ffmpeg_patches
 fetch_dav1d
 fetch_zimg
 

@@ -1,0 +1,80 @@
+diff --git a/libavformat/matroskadec.c b/libavformat/matroskadec.c
+index aa7a2d1..134a3f0 100644
+--- a/libavformat/matroskadec.c
++++ b/libavformat/matroskadec.c
+@@ -438,6 +438,13 @@ typedef struct MatroskaDemuxContext {
+ 
+     /* Bandwidth value for WebM DASH Manifest */
+     int bandwidth;
++
++    /* Skip the Attachments level-1 element entirely: attached files
++     * (fonts, cover art) are not exposed as streams and their payload
++     * bytes are never read. For network playback of remuxes carrying
++     * tens of MB of attachments, reading them dominates
++     * avformat_open_input. */
++    int skip_attachments;
+ } MatroskaDemuxContext;
+ 
+ #define CHILD_OF(parent) { .def = { .n = parent } }
+@@ -1489,6 +1496,20 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
+         break;
+     case EBML_LEVEL1:
+     case EBML_NEST:
++        if (id == MATROSKA_ID_ATTACHMENTS && matroska->skip_attachments) {
++            /* Treat the whole Attachments element like an unknown element:
++             * one forward skip, no per-file reads. Mark it parsed so
++             * matroska_execute_seekhead does not seek back to it. */
++            if (syntax->type == EBML_LEVEL1 &&
++                (level1_elem = matroska_find_level1_elem(matroska, syntax->id, pos))) {
++                if (!level1_elem->pos)
++                    level1_elem->pos = pos;
++                level1_elem->parsed = 1;
++            }
++            av_log(matroska->ctx, AV_LOG_VERBOSE,
++                   "Skipping Attachments element (%"PRIu64" bytes).\n", length);
++            goto skip;
++        }
+         if ((res = ebml_read_master(matroska, length, pos_alt)) < 0)
+             return res;
+         if (id == MATROSKA_ID_SEGMENT)
+@@ -1976,6 +1997,11 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
+         if (id == MATROSKA_ID_CUES)
+             continue;
+ 
++        // attachments are skipped wholesale when requested; don't seek
++        // back to parse them from the SeekHead either.
++        if (id == MATROSKA_ID_ATTACHMENTS && matroska->skip_attachments)
++            continue;
++
+         if (matroska_parse_seekhead_entry(matroska, pos) < 0) {
+             // mark index as broken
+             matroska->cues_parsing_deferred = -1;
+@@ -4859,11 +4885,28 @@ const FFInputFormat ff_webm_dash_manifest_demuxer = {
+ };
+ #endif
+ 
++#define MATROSKA_OFFSET(x) offsetof(MatroskaDemuxContext, x)
++static const AVOption matroska_options[] = {
++    { "skip_attachments",
++      "skip the Attachments element entirely (attached fonts/pictures are not exposed and their bytes are never read)",
++      MATROSKA_OFFSET(skip_attachments), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
++    { NULL },
++};
++#undef MATROSKA_OFFSET
++
++static const AVClass matroska_class = {
++    .class_name = "Matroska / WebM demuxer",
++    .item_name  = av_default_item_name,
++    .option     = matroska_options,
++    .version    = LIBAVUTIL_VERSION_INT,
++};
++
+ const FFInputFormat ff_matroska_demuxer = {
+     .p.name         = "matroska,webm",
+     .p.long_name    = NULL_IF_CONFIG_SMALL("Matroska / WebM"),
+     .p.extensions   = "mkv,mk3d,mka,mks,webm",
+     .p.mime_type    = "audio/webm,audio/x-matroska,video/webm,video/x-matroska",
++    .p.priv_class   = &matroska_class,
+     .priv_data_size = sizeof(MatroskaDemuxContext),
+     .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
+     .read_probe     = matroska_probe,
